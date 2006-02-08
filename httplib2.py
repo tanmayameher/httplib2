@@ -413,9 +413,12 @@ class Http:
                 conn.request(method, request_uri, body, headers)
                 response = conn.getresponse()
             except:
-                conn.close()
-                conn.connect()
-                continue
+                if i == 0:
+                    conn.close()
+                    conn.connect()
+                    continue
+                else:
+                    raise
             else:
                 content = response.read()
                 response = Response(response)
