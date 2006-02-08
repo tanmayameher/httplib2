@@ -412,14 +412,14 @@ class Http:
             try:
                 conn.request(method, request_uri, body, headers)
                 response = conn.getresponse()
+            except:
+                conn.close()
+                conn.connect()
+                continue
+            else:
                 content = response.read()
                 response = Response(response)
                 content = _decompressContent(response, content)
-            except httplib.BadStatusLine, e:
-                if not e.line:
-                    conn.close()
-                    conn.connect()
-                    continue
 
             break;
         return (response, content)
