@@ -5,22 +5,14 @@ A caching http interface that supports ETags and gzip
 to conserve bandwidth. 
 
 Requires Python 2.4 or later
+
 """
 
 __author__ = "Joe Gregorio (joe@bitworking.org)"
 __copyright__ = "Copyright 2006, Joe Gregorio"
 __contributors__ = []
 __license__ = "MIT"
-__history__ = """
-Fixed several bugs raised by James Antill:
-    1. HEAD didn't get an Accept: header added like GET.
-    2. HEAD requests did not use the cache.
-    3. GET requests with Range: headers would erroneously return a full cached response.
-
-and one feature request for 'method' to default to GET.
-
-"""
-__version__ = "0.1.0 ($Rev$)"
+__version__ = "$Rev$"
 
 import re 
 import md5
