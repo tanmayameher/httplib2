@@ -121,6 +121,7 @@ class RedirectLimit(HttpLib2ErrorWithResponse): pass
 class FailedToDecompressContent(HttpLib2ErrorWithResponse): pass
 class UnimplementedDigestAuthOptionError(HttpLib2ErrorWithResponse): pass
 class UnimplementedHmacDigestAuthOptionError(HttpLib2ErrorWithResponse): pass
+class GSSAuthenticationError(HttpLib2ErrorWithResponse): pass
 
 class RelativeURIError(HttpLib2Error): pass
 class ServerNotFoundError(HttpLib2Error): pass
@@ -612,7 +613,25 @@ class GoogleLoginAuthentication(Authentication):
     def request(self, method, request_uri, headers, content):
         """Modify the request headers to add the appropriate
         Authorization header."""
-        headers['authorization'] = 'GoogleLogin Auth=' + self.Auth 
+        headers['authorization'] = 'GoogleLogin Auth=' + self.Auth
+
+
+class GSSAPILoginAuthentication(Authentication):
+    def __init__(self, credentials, host, request_uri, headers, response, content, http):
+        Authentication.__init__(self, credentials, host, request_uri, headers, response, content, http)
+        self.auth_scheme, self.challenge = response['www-authenticate'].split(" ", 1)
+        rc, self.gss_state = kerberos.authGSSClientInit(credentials)
+        self._check_rc(rc)
+
+    def request(self, method, request_uri, headers, content):
+        self._check_rc(kerberos.authGSSClientStep(self.gss_state, self.challenge))
+        response = kerberos.authGSSClientResponse(self.gss_state)
+        headers['authorization'] = self.auth_scheme + " " + response
+        self._check_rc(kerberos.authGSSClientClean(self.gss_state))
+
+    def _check_rc(self, rc):
+        if rc == -1:
+            raise GSSAuthenticationError(_("Error during GSS authentication"))
 
 
 AUTH_SCHEME_CLASSES = {
@@ -620,10 +639,11 @@ AUTH_SCHEME_CLASSES = {
     "wsse": WsseAuthentication,
     "digest": DigestAuthentication,
     "hmacdigest": HmacDigestAuthentication,
-    "googlelogin": GoogleLoginAuthentication
+    "googlelogin": GoogleLoginAuthentication,
+    "kerberos": GSSAPILoginAuthentication
 }
 
-AUTH_SCHEME_ORDER = ["hmacdigest", "googlelogin", "digest", "wsse", "basic"]
+AUTH_SCHEME_ORDER = ["kerberos", "hmacdigest", "googlelogin", "digest", "wsse", "basic"]
 
 class FileCache(object):
     """Uses a local directory as a store for cached files.
